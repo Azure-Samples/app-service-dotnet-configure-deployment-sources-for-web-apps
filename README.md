@@ -6,12 +6,13 @@ author: jianghaolu
 
 #Getting Started with App - Manage Web App Source Control - in .Net #
 
-      Azure App Service basic sample for managing web apps.
-       - Create 4 web apps under the same new app service plan:
-         - Deploy to 1 using FTP
-         - Deploy to 2 using local Git repository
-         - Deploy to 3 using a publicly available Git repository
-         - Deploy to 4 using a GitHub repository with continuous integration
+          Azure App Service basic sample for managing web apps.
+          Note: you need to have the Git command line available on your PATH. The sample makes a direct call to 'git'.
+           - Create 4 web apps under the same new app service plan:
+             - Deploy to 1 using FTP
+             - Deploy to 2 using local Git repository
+             - Deploy to 3 using a publicly available Git repository
+             - Deploy to 4 using a GitHub repository with continuous integration
 
 
 ## Running this Sample ##
