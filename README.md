@@ -25,10 +25,10 @@ Set the environment variable `AZURE_AUTH_LOCATION` with the full path for an aut
     git clone https://github.com/Azure-Samples/app-service-dotnet-configure-deployment-sources-for-web-apps.git
 
     cd app-service-dotnet-configure-deployment-sources-for-web-apps
-
-    dotnet restore
-
-    dotnet run
+  
+    dotnet build
+    
+    bin\Debug\net452\ManageWebAppSourceControl.exe
 
 ## More information ##
 
