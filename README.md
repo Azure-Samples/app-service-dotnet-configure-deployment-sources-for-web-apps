@@ -10,7 +10,7 @@ extensions:
 description: "Azure App Service basic sample for managing web apps."
 ---
 
-# Getting started on configuring deployment sources for Web Apps in C# #
+# Getting started on configuring deployment sources for Web Apps in C#
 
  Azure App Service basic sample for managing web apps.
  Note: you need to have the Git command line available on your PATH. The sample makes a direct call to 'git'.
@@ -22,7 +22,7 @@ description: "Azure App Service basic sample for managing web apps."
     - Deploy to 5 using Web Deploy
 
 
-## Running this Sample ##
+## Running this Sample
 
 To run this sample:
 
@@ -36,7 +36,7 @@ Set the environment variable `AZURE_AUTH_LOCATION` with the full path for an aut
 
     bin\Debug\net452\ManageWebAppSourceControl.exe
 
-## More information ##
+## More information
 
 [Azure Management Libraries for C#](https://github.com/Azure/azure-sdk-for-net/tree/Fluent)
 [Azure .Net Developer Center](https://azure.microsoft.com/en-us/develop/net/)
