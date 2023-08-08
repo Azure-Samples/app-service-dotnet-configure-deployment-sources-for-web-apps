@@ -1,6 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
+using Azure.ResourceManager.KeyVault;
+using Azure.ResourceManager.AppService;
+using Azure.ResourceManager.CosmosDB;
+using Azure.ResourceManager.CosmosDB.Models;
+using Azure.ResourceManager;
+using Azure.Core;
 using CoreFtp;
 using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.Fluent;
@@ -13,6 +19,8 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Azure.ResourceManager.Resources;
+using System.Drawing;
 
 namespace ManageWebAppSourceControl
 {
@@ -30,8 +38,9 @@ namespace ManageWebAppSourceControl
          *    - Deploy to 4 using a GitHub repository with continuous integration
          *    - Deploy to 5 using Web Deploy
          */
-        public static void RunSample(IAzure azure)
+        public static void RunSample(ArmClient client)
         {
+            AzureLocation region = AzureLocation.EastUS;
             string app1Name = SdkContext.RandomResourceName("webapp1-", 20);
             string app2Name = SdkContext.RandomResourceName("webapp2-", 20);
             string app3Name = SdkContext.RandomResourceName("webapp3-", 20);
@@ -43,6 +52,8 @@ namespace ManageWebAppSourceControl
             string app4Url = app4Name + Suffix;
             string app5Url = app5Name + Suffix;
             string rgName = SdkContext.RandomResourceName("rg1NEMV_", 24);
+            var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+            var resourceGroup = lro.Value;
 
             try
             {
@@ -51,17 +62,20 @@ namespace ManageWebAppSourceControl
 
                 Utilities.Log("Creating web app " + app1Name + " in resource group " + rgName + "...");
 
-                var app1 = azure.WebApps
-                        .Define(app1Name)
-                        .WithRegion(Region.USWest)
-                        .WithNewResourceGroup(rgName)
-                        .WithNewWindowsPlan(PricingTier.StandardS1)
-                        .WithJavaVersion(JavaVersion.V8Newest)
-                        .WithWebContainer(WebContainer.Tomcat8_0Newest)
-                        .Create();
+                var webSiteCollection = resourceGroup.GetWebSites();
+                var webSiteData = new WebSiteData(region)
+                {
+                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    {
+                        WindowsFxVersion = "PricingTier.StandardS1",
+                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                    }
+                };
+                var webSite_lro = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app1Name, webSiteData);
+                var webSite = webSite_lro.Value;
 
-                Utilities.Log("Created web app " + app1.Name);
-                Utilities.Print(app1);
+                Utilities.Log("Created web app " + webSite.Data.Name);
+                Utilities.Print(webSite);
 
                 //============================================================
                 // Deploy to app 1 through FTP
@@ -72,8 +86,8 @@ namespace ManageWebAppSourceControl
                     app1.GetPublishingProfile(), 
                     Path.Combine(Utilities.ProjectPath, "Asset", "helloworld.war"));
 
-                Utilities.Log("Deployment helloworld.War to web app " + app1.Name + " completed");
-                Utilities.Print(app1);
+                Utilities.Log("Deployment helloworld.War to web app " + webSite.Data.Name + " completed");
+                Utilities.Print(webSite);
 
                 // warm up
                 Utilities.Log("Warming up " + app1Url + "/helloworld...");
@@ -86,29 +100,32 @@ namespace ManageWebAppSourceControl
                 // Create a second web app with local git source control
 
                 Utilities.Log("Creating another web app " + app2Name + " in resource group " + rgName + "...");
-                var plan = azure.AppServices.AppServicePlans.GetById(app1.AppServicePlanId);
-                var app2 = azure.WebApps
-                        .Define(app2Name)
-                        .WithExistingWindowsPlan(plan)
-                        .WithExistingResourceGroup(rgName)
-                        .WithLocalGitSourceControl()
-                        .WithJavaVersion(JavaVersion.V8Newest)
-                        .WithWebContainer(WebContainer.Tomcat8_0Newest)
-                        .Create();
+                var plan = webSite.Data.AppServicePlanId;
+                var webSiteData2 = new WebSiteData(region)
+                {
+                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    {
+                        WindowsFxVersion = "PricingTier.StandardS1",
+                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                    },
+                    AppServicePlanId = plan,
+                };
+                var webSite_lro2 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app2Name, webSiteData);
+                var webSite2 = webSite_lro.Value;
 
-                Utilities.Log("Created web app " + app2.Name);
-                Utilities.Print(app2);
+                Utilities.Log("Created web app " + webSite2.Data.Name);
+                Utilities.Print(webSite2);
 
                 //============================================================
                 // Deploy to app 2 through local Git
 
                 Utilities.Log("Deploying a local Tomcat source to " + app2Name + " through Git...");
 
-                var profile = app2.GetPublishingProfile();
+                var profile = webSite2.Data.HostingEnvironmentProfile;
                 Utilities.DeployByGit(profile, "azure-samples-appservice-helloworld");
 
-                Utilities.Log("Deployment to web app " + app2.Name + " completed");
-                Utilities.Print(app2);
+                Utilities.Log("Deployment to web app " + webSite2.Data.Name + " completed");
+                Utilities.Print(webSite2);
 
                 // warm up
                 Utilities.Log("Warming up " + app2Url + "/helloworld...");
@@ -121,18 +138,21 @@ namespace ManageWebAppSourceControl
                 // Create a 3rd web app with a public GitHub repo in Azure-Samples
 
                 Utilities.Log("Creating another web app " + app3Name + "...");
-                var app3 = azure.WebApps
-                        .Define(app3Name)
-                        .WithExistingWindowsPlan(plan)
-                        .WithNewResourceGroup(rgName)
-                        .DefineSourceControl()
-                            .WithPublicGitRepository("https://github.com/Azure-Samples/app-service-web-dotnet-get-started")
-                            .WithBranch("master")
-                            .Attach()
-                        .Create();
+                var webSiteData3 = new WebSiteData(region)
+                {
+                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    {
+                        WindowsFxVersion = "PricingTier.StandardS1",
+                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                    },
+                    AppServicePlanId = plan,
 
-                Utilities.Log("Created web app " + app3.Name);
-                Utilities.Print(app3);
+                };
+                var webSite_lro3 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app3Name, webSiteData);
+                var webSite3 = webSite_lro.Value;
+
+                Utilities.Log("Created web app " + webSite3.Data.Name);
+                Utilities.Print(webSite3);
 
                 // warm up
                 Utilities.Log("Warming up " + app3Url + "...");
@@ -145,20 +165,21 @@ namespace ManageWebAppSourceControl
                 // Create a 4th web app with a personal GitHub repo and turn on continuous integration
 
                 Utilities.Log("Creating another web app " + app4Name + "...");
-                var app4 = azure.WebApps
-                        .Define(app4Name)
-                        .WithExistingWindowsPlan(plan)
-                        .WithExistingResourceGroup(rgName)
-                        // Uncomment the following lines to turn on 4th scenario
-                        //.DefineSourceControl()
-                        //    .WithContinuouslyIntegratedGitHubRepository("username", "reponame")
-                        //    .WithBranch("master")
-                        //    .WithGitHubAccessToken("YOUR GITHUB PERSONAL TOKEN")
-                        //    .Attach()
-                        .Create();
+                var webSiteData4 = new WebSiteData(region)
+                {
+                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    {
+                        WindowsFxVersion = "PricingTier.StandardS1",
+                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                    },
+                    AppServicePlanId = plan,
 
-                Utilities.Log("Created web app " + app4.Name);
-                Utilities.Print(app4);
+                };
+                var webSite_lro4 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app4Name, webSiteData);
+                var webSite4 = webSite_lro.Value;
+
+                Utilities.Log("Created web app " + webSite4.Data.Name);
+                Utilities.Print(webSite4);
 
                 // warm up
                 Utilities.Log("Warming up " + app4Url + "...");
@@ -172,27 +193,31 @@ namespace ManageWebAppSourceControl
 
                 Utilities.Log("Creating another web app " + app5Name + "...");
 
-                IWebApp app5 = azure.WebApps.Define(app5Name)
-                    .WithExistingWindowsPlan(plan)
-                    .WithExistingResourceGroup(rgName)
-                    .WithNetFrameworkVersion(NetFrameworkVersion.V4_6)
-                    .Create();
+                var webSiteData5 = new WebSiteData(region)
+                {
+                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    {
+                        WindowsFxVersion = "PricingTier.StandardS1",
+                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                    },
+                    AppServicePlanId = plan,
 
-                Utilities.Log("Created web app " + app5.Name);
-                Utilities.Print(app5);
+                };
+                var webSite_lro5 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app5Name, webSiteData);
+                var webSite5 = webSite_lro.Value;
+
+                Utilities.Log("Created web app " + webSite5.Data.Name);
+                Utilities.Print(webSite5);
 
                 //============================================================
                 // Deploy to the 5th web app through web deploy
 
                 Utilities.Log("Deploying a bakery website to " + app5Name + " through web deploy...");
 
-                app5.Deploy()
-                    .WithPackageUri("https://github.com/Azure/azure-libraries-for-net/raw/master/Tests/Fluent.Tests/Assets/bakery-webapp.zip")
-                    .WithExistingDeploymentsDeleted(true)
-                    .Execute();
+                webSite5.Update(new Azure.ResourceManager.AppService.Models.SitePatchInfo() { });
 
                 Utilities.Log("Deployment to web app " + app5Name + " completed.");
-                Utilities.Print(app5);
+                Utilities.Print(webSite5);
 
                 // warm up
                 Utilities.Log("Warming up " + app5Url + "...");
@@ -210,7 +235,7 @@ namespace ManageWebAppSourceControl
                 try
                 {
                     Utilities.Log("Deleting Resource Group: " + rgName);
-                    azure.ResourceGroups.DeleteByName(rgName);
+                    resourceGroup.Delete(Azure.WaitUntil.Completed);
                     Utilities.Log("Deleted Resource Group: " + rgName);
                 }
                 catch (NullReferenceException)
@@ -232,16 +257,12 @@ namespace ManageWebAppSourceControl
                 // Authenticate
                 var credentials = SdkContext.AzureCredentialsFactory.FromFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
 
-                var azure = Azure
-                    .Configure()
-                    .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
-                    .Authenticate(credentials)
-                    .WithDefaultSubscription();
+                var client = new ArmClient(null, "db1ab6f0-4769-4b27-930e-01e2ef9c123c");
 
                 // Print selected subscription
-                Utilities.Log("Selected subscription: " + azure.SubscriptionId);
+                Utilities.Log("Selected subscription: " + client.GetSubscriptions().Id);
 
-                RunSample(azure);
+                RunSample(client);
             }
             catch (Exception e)
             {
