@@ -3,6 +3,7 @@
 
 using Azure.ResourceManager.KeyVault;
 using Azure.ResourceManager.AppService;
+using Azure.ResourceManager.AppService.Models;
 using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
 using Azure.ResourceManager;
@@ -12,7 +13,7 @@ using Microsoft.Azure.Management.AppService.Fluent;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
-using Microsoft.Azure.Management.Samples.Common;
+using Azure.ResourceManager.Samples.Common;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -38,7 +39,7 @@ namespace ManageWebAppSourceControl
          *    - Deploy to 4 using a GitHub repository with continuous integration
          *    - Deploy to 5 using Web Deploy
          */
-        public static void RunSample(ArmClient client)
+        public static async void RunSample(ArmClient client)
         {
             AzureLocation region = AzureLocation.EastUS;
             string app1Name = SdkContext.RandomResourceName("webapp1-", 20);
@@ -82,8 +83,12 @@ namespace ManageWebAppSourceControl
 
                 Utilities.Log("Deploying helloworld.War to " + app1Name + " through FTP...");
 
+                var publishingprofile = await webSite.GetPublishingProfileXmlWithSecretsAsync(new CsmPublishingProfile()
+                {
+                    Format = PublishingProfileFormat.Ftp
+                });
                 Utilities.UploadFileToWebApp(
-                    app1.GetPublishingProfile(), 
+                    publishingprofile, 
                     Path.Combine(Utilities.ProjectPath, "Asset", "helloworld.war"));
 
                 Utilities.Log("Deployment helloworld.War to web app " + webSite.Data.Name + " completed");
