@@ -6,6 +6,8 @@ using System.IO;
 using System.Net.Http;
 using System;
 using System.Text;
+using Microsoft.Azure.Management.AppService.Fluent;
+using System.Diagnostics;
 
 namespace Azure.ResourceManager.Samples.Common
 {
@@ -114,6 +116,28 @@ namespace Azure.ResourceManager.Samples.Common
             }
 
             return "[Running in PlaybackMode]";
+        }
+
+        public static void DeployByGit(string userName, string userPWD, string gitUrl, string repository)
+        {
+            if (!IsRunningMocked)
+            {
+                string gitCommand = "git";
+                string gitInitArgument = @"init";
+                string gitAddArgument = @"add -A";
+                string gitCommitArgument = @"commit -am ""Initial commit"" ";
+                string gitPushArgument = $"push https://{userName}:{userPWD}@{gitUrl} master:master -f";
+
+                ProcessStartInfo info = new ProcessStartInfo(gitCommand, gitInitArgument);
+                info.WorkingDirectory = Path.Combine(ProjectPath, "Asset", repository);
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitAddArgument;
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitCommitArgument;
+                Process.Start(info).WaitForExit();
+                info.Arguments = gitPushArgument;
+                Process.Start(info).WaitForExit();
+            }
         }
 
         public static void UploadFileToWebApp(Stream profile, string filePath, string fileName = null)

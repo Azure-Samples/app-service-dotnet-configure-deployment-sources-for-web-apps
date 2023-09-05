@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Azure.ResourceManager.Resources;
 using System.Drawing;
+using System.Xml;
 
 namespace ManageWebAppSourceControl
 {
@@ -83,10 +84,11 @@ namespace ManageWebAppSourceControl
 
                 Utilities.Log("Deploying helloworld.War to " + app1Name + " through FTP...");
 
-                var publishingprofile = await webSite.GetPublishingProfileXmlWithSecretsAsync(new CsmPublishingProfile()
+                var publishingprofile = (await webSite.GetPublishingProfileXmlWithSecretsAsync(new CsmPublishingProfile()
                 {
                     Format = PublishingProfileFormat.Ftp
-                });
+                })).Value;
+
                 Utilities.UploadFileToWebApp(
                     publishingprofile, 
                     Path.Combine(Utilities.ProjectPath, "Asset", "helloworld.war"));
@@ -126,8 +128,17 @@ namespace ManageWebAppSourceControl
 
                 Utilities.Log("Deploying a local Tomcat source to " + app2Name + " through Git...");
 
-                var profile = webSite2.Data.HostingEnvironmentProfile;
-                Utilities.DeployByGit(profile, "azure-samples-appservice-helloworld");
+                var reader = new StreamReader(publishingprofile);
+                var content = reader.ReadToEnd();
+                XmlDocument xmlDoc = new XmlDocument();
+                xmlDoc.LoadXml(content);
+                XmlNodeList gitUrl = xmlDoc.GetElementsByTagName("publishUrl");
+                string gitUrlString = gitUrl[0].InnerText;
+                XmlNodeList userName = xmlDoc.GetElementsByTagName("userName");
+                string userNameString = userName[0].InnerText;
+                XmlNodeList password = xmlDoc.GetElementsByTagName("userPWD");
+                string passwordString = password[0].InnerText;
+                Utilities.DeployByGit(userNameString ,passwordString, gitUrlString, "azure-samples-appservice-helloworld");
 
                 Utilities.Log("Deployment to web app " + webSite2.Data.Name + " completed");
                 Utilities.Print(webSite2);
