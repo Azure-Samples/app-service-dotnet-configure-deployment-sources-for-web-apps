@@ -8,11 +8,6 @@ using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
 using Azure.ResourceManager;
 using Azure.Core;
-using CoreFtp;
-using Microsoft.Azure.Management.AppService.Fluent;
-using Microsoft.Azure.Management.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Azure.ResourceManager.Samples.Common;
 using System;
 using System.Diagnostics;
@@ -23,6 +18,7 @@ using System.Threading.Tasks;
 using Azure.ResourceManager.Resources;
 using System.Drawing;
 using System.Xml;
+using Azure.Identity;
 
 namespace ManageWebAppSourceControl
 {
@@ -40,21 +36,21 @@ namespace ManageWebAppSourceControl
          *    - Deploy to 4 using a GitHub repository with continuous integration
          *    - Deploy to 5 using Web Deploy
          */
-        public static async void RunSample(ArmClient client)
+        public static async Task RunSample(ArmClient client)
         {
             AzureLocation region = AzureLocation.EastUS;
-            string app1Name = SdkContext.RandomResourceName("webapp1-", 20);
-            string app2Name = SdkContext.RandomResourceName("webapp2-", 20);
-            string app3Name = SdkContext.RandomResourceName("webapp3-", 20);
-            string app4Name = SdkContext.RandomResourceName("webapp4-", 20);
-            string app5Name = SdkContext.RandomResourceName("webapp5-", 20);
+            string app1Name = Utilities.CreateRandomName("webapp1-");
+            string app2Name = Utilities.CreateRandomName("webapp2-");
+            string app3Name = Utilities.CreateRandomName("webapp3-");
+            string app4Name = Utilities.CreateRandomName("webapp4-");
+            string app5Name = Utilities.CreateRandomName("webapp5-");
             string app1Url = app1Name + Suffix;
             string app2Url = app2Name + Suffix;
             string app3Url = app3Name + Suffix;
             string app4Url = app4Name + Suffix;
             string app5Url = app5Name + Suffix;
-            string rgName = SdkContext.RandomResourceName("rg1NEMV_", 24);
-            var lro = client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdate(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
+            string rgName = Utilities.CreateRandomName("rg1NEMV_");
+            var lro =await client.GetDefaultSubscription().GetResourceGroups().CreateOrUpdateAsync(Azure.WaitUntil.Completed, rgName, new ResourceGroupData(AzureLocation.EastUS));
             var resourceGroup = lro.Value;
 
             try
@@ -73,7 +69,7 @@ namespace ManageWebAppSourceControl
                         NetFrameworkVersion = "NetFrameworkVersion.V4_6",
                     }
                 };
-                var webSite_lro = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app1Name, webSiteData);
+                var webSite_lro =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app1Name, webSiteData);
                 var webSite = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite.Data.Name);
@@ -99,7 +95,7 @@ namespace ManageWebAppSourceControl
                 // warm up
                 Utilities.Log("Warming up " + app1Url + "/helloworld...");
                 Utilities.CheckAddress("http://" + app1Url + "/helloworld");
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + app1Url + "/helloworld...");
                 Utilities.Log(Utilities.CheckAddress("http://" + app1Url + "/helloworld"));
 
@@ -117,7 +113,7 @@ namespace ManageWebAppSourceControl
                     },
                     AppServicePlanId = plan,
                 };
-                var webSite_lro2 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app2Name, webSiteData);
+                var webSite_lro2 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app2Name, webSiteData);
                 var webSite2 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite2.Data.Name);
@@ -146,7 +142,7 @@ namespace ManageWebAppSourceControl
                 // warm up
                 Utilities.Log("Warming up " + app2Url + "/helloworld...");
                 Utilities.CheckAddress("http://" + app2Url + "/helloworld");
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + app2Url + "/helloworld...");
                 Utilities.Log(Utilities.CheckAddress("http://" + app2Url + "/helloworld"));
 
@@ -164,7 +160,7 @@ namespace ManageWebAppSourceControl
                     AppServicePlanId = plan,
 
                 };
-                var webSite_lro3 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app3Name, webSiteData);
+                var webSite_lro3 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app3Name, webSiteData);
                 var webSite3 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite3.Data.Name);
@@ -173,7 +169,7 @@ namespace ManageWebAppSourceControl
                 // warm up
                 Utilities.Log("Warming up " + app3Url + "...");
                 Utilities.CheckAddress("http://" + app3Url);
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + app3Url + "...");
                 Utilities.Log(Utilities.CheckAddress("http://" + app3Url));
 
@@ -191,7 +187,7 @@ namespace ManageWebAppSourceControl
                     AppServicePlanId = plan,
 
                 };
-                var webSite_lro4 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app4Name, webSiteData);
+                var webSite_lro4 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app4Name, webSiteData);
                 var webSite4 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite4.Data.Name);
@@ -200,7 +196,7 @@ namespace ManageWebAppSourceControl
                 // warm up
                 Utilities.Log("Warming up " + app4Url + "...");
                 Utilities.CheckAddress("http://" + app4Url);
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + app4Url + "...");
                 Utilities.Log(Utilities.CheckAddress("http://" + app4Url));
 
@@ -219,7 +215,7 @@ namespace ManageWebAppSourceControl
                     AppServicePlanId = plan,
 
                 };
-                var webSite_lro5 = webSiteCollection.CreateOrUpdate(Azure.WaitUntil.Completed, app5Name, webSiteData);
+                var webSite_lro5 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app5Name, webSiteData);
                 var webSite5 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite5.Data.Name);
@@ -238,7 +234,7 @@ namespace ManageWebAppSourceControl
                 // warm up
                 Utilities.Log("Warming up " + app5Url + "...");
                 Utilities.CheckAddress("http://" + app5Url);
-                SdkContext.DelayProvider.Delay(5000);
+                Thread.Sleep(5000);
                 Utilities.Log("CURLing " + app5Url + "...");
                 Utilities.Log(Utilities.CheckAddress("http://" + app5Url));
             }
@@ -265,20 +261,23 @@ namespace ManageWebAppSourceControl
             }
         }
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             try
             {
                 //=================================================================
                 // Authenticate
-                var credentials = SdkContext.AzureCredentialsFactory.FromFile(Environment.GetEnvironmentVariable("AZURE_AUTH_LOCATION"));
-
-                var client = new ArmClient(null, "db1ab6f0-4769-4b27-930e-01e2ef9c123c");
+                var clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
+                var clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+                var tenantId = Environment.GetEnvironmentVariable("TENANT_ID");
+                var subscription = Environment.GetEnvironmentVariable("SUBSCRIPTION_ID");
+                ClientSecretCredential credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+                ArmClient client = new ArmClient(credential, subscription);
 
                 // Print selected subscription
                 Utilities.Log("Selected subscription: " + client.GetSubscriptions().Id);
 
-                RunSample(client);
+                await RunSample(client);
             }
             catch (Exception e)
             {

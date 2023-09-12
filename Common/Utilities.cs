@@ -6,7 +6,6 @@ using System.IO;
 using System.Net.Http;
 using System;
 using System.Text;
-using Microsoft.Azure.Management.AppService.Fluent;
 using System.Diagnostics;
 
 namespace Azure.ResourceManager.Samples.Common
