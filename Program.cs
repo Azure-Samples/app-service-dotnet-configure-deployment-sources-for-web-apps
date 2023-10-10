@@ -67,6 +67,8 @@ namespace ManageWebAppSourceControl
                     {
                         WindowsFxVersion = "PricingTier.StandardS1",
                         NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                        JavaContainerVersion = "JavaVersion.V8Newest",
+                        JavaContainer = "WebContainer.Tomcat8_0Newest"
                     }
                 };
                 var webSite_lro =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app1Name, webSiteData);
@@ -108,12 +110,12 @@ namespace ManageWebAppSourceControl
                 {
                     SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
                     {
-                        WindowsFxVersion = "PricingTier.StandardS1",
-                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
+                        JavaContainerVersion = "JavaVersion.V8Newest",
+                        JavaContainer = "WebContainer.Tomcat8_0Newest"
                     },
                     AppServicePlanId = plan,
                 };
-                var webSite_lro2 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app2Name, webSiteData);
+                var webSite_lro2 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app2Name, webSiteData2);
                 var webSite2 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite2.Data.Name);
@@ -150,21 +152,20 @@ namespace ManageWebAppSourceControl
                 // Create a 3rd web app with a public GitHub repo in Azure-Samples
 
                 Utilities.Log("Creating another web app " + app3Name + "...");
-                var webSiteData3 = new WebSiteData(region)
+                var publicRepodata = new SiteSourceControlData()
                 {
-                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
-                    {
-                        WindowsFxVersion = "PricingTier.StandardS1",
-                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
-                    },
-                    AppServicePlanId = plan,
-
+                    RepoUri = new Uri("https://github.com/Azure-Samples/app-service-web-dotnet-get-started"),
+                    Branch = "master",
+                    //IsManualIntegration = true,
+                    //IsMercurial = false,
                 };
                 var webSite_lro3 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app3Name, webSiteData);
                 var webSite3 = webSite_lro.Value;
+                var container = webSite3.GetWebSiteSourceControl();
+                var sourceControl = (await container.CreateOrUpdateAsync(Azure.WaitUntil.Completed, publicRepodata)).Value;
 
                 Utilities.Log("Created web app " + webSite3.Data.Name);
-                Utilities.Print(webSite3);
+                Utilities.Print(sourceControl);
 
                 // warm up
                 Utilities.Log("Warming up " + app3Url + "...");
@@ -179,15 +180,13 @@ namespace ManageWebAppSourceControl
                 Utilities.Log("Creating another web app " + app4Name + "...");
                 var webSiteData4 = new WebSiteData(region)
                 {
-                    SiteConfig = new Azure.ResourceManager.AppService.Models.SiteConfigProperties()
+                    SiteConfig = new SiteConfigProperties()
                     {
-                        WindowsFxVersion = "PricingTier.StandardS1",
-                        NetFrameworkVersion = "NetFrameworkVersion.V4_6",
                     },
                     AppServicePlanId = plan,
 
                 };
-                var webSite_lro4 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app4Name, webSiteData);
+                var webSite_lro4 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app4Name, webSiteData4);
                 var webSite4 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite4.Data.Name);
