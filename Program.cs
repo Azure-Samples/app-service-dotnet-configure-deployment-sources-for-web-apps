@@ -159,7 +159,11 @@ namespace ManageWebAppSourceControl
                     //IsManualIntegration = true,
                     //IsMercurial = false,
                 };
-                var webSite_lro3 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app3Name, webSiteData);
+                var webSite3Data = new WebSiteData(region)
+                {
+                    AppServicePlanId = plan
+                };
+                var webSite_lro3 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app3Name, webSite3Data);
                 var webSite3 = webSite_lro.Value;
                 var container = webSite3.GetWebSiteSourceControl();
                 var sourceControl = (await container.CreateOrUpdateAsync(Azure.WaitUntil.Completed, publicRepodata)).Value;
@@ -214,7 +218,7 @@ namespace ManageWebAppSourceControl
                     AppServicePlanId = plan,
 
                 };
-                var webSite_lro5 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app5Name, webSiteData);
+                var webSite_lro5 =await webSiteCollection.CreateOrUpdateAsync(Azure.WaitUntil.Completed, app5Name, webSiteData5);
                 var webSite5 = webSite_lro.Value;
 
                 Utilities.Log("Created web app " + webSite5.Data.Name);
