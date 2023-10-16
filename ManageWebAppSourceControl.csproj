@@ -31,5 +31,13 @@
 		<PackageReference Include="Azure.ResourceManager.Storage" Version="1.2.0-beta.1" />
 		<PackageReference Include="Azure.ResourceManager.TrafficManager" Version="1.1.0" />
 	</ItemGroup>
+	<ItemGroup>
+		<None Update="Asset\azure-samples-appservice-helloworld\.gitignore">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="Asset\helloworld.war">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>
